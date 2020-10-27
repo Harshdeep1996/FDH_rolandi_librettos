@@ -9,9 +9,33 @@ import json
 import geopy
 import geonamescache
 import unicodedata as ud
+import string as strMod
+from difflib import SequenceMatcher
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+def isAllNum(string):
+    numb=''
+    for el in string:
+        if el.isdigit():
+            numb+=el
+    if len(numb)>0:
+        return int(numb)
+    else: return string
+
+
+
+def makeNumeric(element):
+    if type(element) == int:
+        return element
+    if type(element) == list:
+        return isAllNum(element[0])
+    if type(element) == str:
+        return isAllNum(element)
+
 
 latin_letters= {}
-
 def is_latin(uchr):
     try: return latin_letters[uchr]
     except KeyError:
@@ -27,62 +51,87 @@ def notAllUpper(string):
             pass
         else: return True
 
-#ToDo: 1) read manifest.jsons 2) find jpg of first 5 pages 3) ocr pages 4) save as txt
-'''
+def dealWithPunctuation(text):
+    punc = strMod.punctuation
+    punc +='’'
 
-in_memory_file = io.BytesIO(response.content)
-im = Image.open(in_memory_file)
-im.show()
-'''
+    string = [el if el not in punc else ' '+el+' ' for el in text]
+    return  ''.join(string)
 
-
+# Functions to extract entities from the text
 def findYearTitle(jsonData):
     metaData = jsonData['metadata']
+    title = 'no_title'
+    year = 'no_year'
     for el in metaData:
         if el['label'] == 'title':
             title = el['value']
-        else: title = 'no_title'
         if el['label'] == 'date_year_start':
             year = el['value']
-        else: year = 'no_year'
 
     return title, year
 
+def getSplitText(urlPage):
+    # get text with teseract
+    response = requests.get(urlPage, stream=True)
+    in_memory_file = io.BytesIO(response.content)
+    text = pytesseract.image_to_string(Image.open(in_memory_file))
+    text = dealWithPunctuation(text)
+    textSplit = text.split()
+    # textSplit = [word for word in textSplit if len(word)>2]
+    return textSplit
 
+def getPotCityName(textSplit):
+    pot_city_name = []
+    for word in textSplit:
+        for city in italianCitiesList:
+            #if similar(city.lower(), word.lower())>0.9:
+            if city.lower() == word.lower():
+                pot_city_name.append(city.lower())
+    return pot_city_name
+
+# To compile a list of all cities
 def cityDic():
     city = geonamescache.GeonamesCache().get_cities()
-    cities = {}
+    citiyDic = {}
     cityList = []
     n=0
     for key in city:
-        if city[key]['countrycode'] == 'IT':
+        if city[key]['countrycode'] == 'IT' and city[key]['population']> 20000:
             if len(city[key]['alternatenames'][0]) != 0:
-                validCityNames = [city[key]['name']] +  [name for name in city[key]['alternatenames']  if only_roman_chars(name) and notAllUpper(name) and len(name)>3]
+                validCityNames = [city[key]['name'].lower()] +  [name.lower() for name in city[key]['alternatenames']  if only_roman_chars(name) and notAllUpper(name) and len(name)>3]
                 cityList += validCityNames
+                for name in validCityNames:
+                    citiyDic[name] = city[key]
 
-                cities[city[key]['name'].lower()] = [validCityNames, city[key]['countrycode'].lower()]
             else:
-                cityList+=[city[key]['name']]
-                cities[city[key]['name'].lower()] = [[city[key]['name']], city[key]['countrycode'].lower()]
+                cityList+=[city[key]['name'].lower()]
+                citiyDic[city[key]['name'].lower()] = city[key]
+
             n+=1
 
-    print(n)
-    return cities, cityList
+    cityFilter = ['regio', 'marino', 'come', 'bra', 'ramma']
+    cityList = list(filter(lambda a: a not in cityFilter, cityList))
+    cityList = list(set(cityList))
+    print(len(cityList))
+    return citiyDic, cityList
 
 
 
 
 inPath = '/home/nulpe/Desktop/foundations_dh/fdh_manifests/'
 outPath = '/home/nulpe/Desktop/foundations_dh/'
-columns =['file_name', 'title', 'date', 'front_page','pot_city_name']
+columns =['file_name', 'title', 'date', 'coperta', 'pot_city_name', 'coperta_appended', 'city_name', 'latitude', 'longitude']
 df_librettos = pd.DataFrame(columns= columns)
 
 
 italianCities, italianCitiesList = cityDic()
-print(italianCitiesList)
 
 
 
+
+
+potCityMatches = 0
 
 for idx, filename in enumerate(os.listdir(inPath)):
     tempList = []
@@ -93,48 +142,85 @@ for idx, filename in enumerate(os.listdir(inPath)):
             jsonData = json.load(jsonFile)
             title, year = findYearTitle(jsonData)
             tempList.append(title)
-            tempList.append(year)
+            tempList.append(makeNumeric(year))
             front_page = []
             pot_city_name = []
 
             pagesData = jsonData['sequences'][0]['canvases']
             page = 0
 
-            for el in pagesData[:5]:
-                #get image from api
+
+            #Only look at the coperte
+            i=0
+            coperta = True
+
+
+            #get text from coperte
+            while coperta:
+                el = pagesData[i]
+                i += 1
+
                 imageApi = el['images'][0]['resource']['service']['@id']
                 urlPage = imageApi+'/full/,512/0/default.jpg'
 
-                #get text with teseract
-                response = requests.get(urlPage, stream=True)
-                in_memory_file = io.BytesIO(response.content)
-                text = pytesseract.image_to_string(Image.open(in_memory_file), lang='ita')
-                textSplit = text.split()
-
-                if len(textSplit) > 50:
-                    break
-
-                for word in textSplit:
-                    for city in italianCitiesList:
-                        if city.lower() == word.lower():
-                            pot_city_name.append(city.lower())
-
-                #if cityName:
-                 #   print(textSplit)
-
-
-
+                #get text with teseract & potential city name
+                textSplit = getSplitText(urlPage)
                 front_page += textSplit
+                pot_city_name = getPotCityName(textSplit)
+                coperta_appended = 0
+
+                if 'coperta' not in pagesData[i]['label']:
+                    coperta = False
+
+
+
+            if len(front_page) <30:
+                while len(front_page) < 100:
+                    try:
+                        el = pagesData[i]
+                        i += 1
+                        imageApi = el['images'][0]['resource']['service']['@id']
+                        urlPage = imageApi + '/full/,512/0/default.jpg'
+
+                        # get text with teseract
+                        textSplit = getSplitText(urlPage)
+                        front_page += textSplit
+                        pot_city_name += getPotCityName(textSplit)
+                        coperta_appended = 1
+                    except:
+                        print('page missing')
+                        break
+
+
+
+
+
 
             tempList.append(front_page)
             tempList.append(pot_city_name)
+            tempList.append(coperta_appended)
+
+            #Get location of first mentioned city
+            if len(pot_city_name) != 0:
+                tempList.append(italianCities[pot_city_name[0]]['name'])
+                tempList.append(italianCities[pot_city_name[0]]['latitude'])
+                tempList.append(italianCities[pot_city_name[0]]['longitude'])
+            else:
+                tempList.append(0)
+                tempList.append(0)
+                tempList.append(0)
+
+            if len(pot_city_name) != 0:
+                potCityMatches+=1
+
+
             df_librettos.loc[len(df_librettos)] =tempList
 
-            print('we are at ', idx + 1, 'of in total', len(os.listdir(inPath)), 'librettos')
+            print('we are at ', idx + 1, 'of in total', len(os.listdir(inPath)), 'librettos. We have', potCityMatches/(idx + 1)*100, '% city matches')
 
             if (idx+1)  % 10 == 0:
                 print(df_librettos)
-                df_librettos.columns = ['file_name', 'title', 'date', 'title_page', 'pot_city_name']
+                df_librettos.columns = columns
                 df_librettos.to_pickle(outPath+'librettos.pkl')
                 df_librettos.to_csv(outPath+'librettos.csv', index=False, sep='\t', header=True)
 
