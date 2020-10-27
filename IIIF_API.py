@@ -157,20 +157,24 @@ for idx, filename in enumerate(os.listdir(inPath)):
 
             #get text from coperte
             while coperta:
-                el = pagesData[i]
-                i += 1
+                try:
+                    el = pagesData[i]
+                    i += 1
 
-                imageApi = el['images'][0]['resource']['service']['@id']
-                urlPage = imageApi+'/full/,512/0/default.jpg'
+                    imageApi = el['images'][0]['resource']['service']['@id']
+                    urlPage = imageApi+'/full/,512/0/default.jpg'
 
-                #get text with teseract & potential city name
-                textSplit = getSplitText(urlPage)
-                front_page += textSplit
-                pot_city_name = getPotCityName(textSplit)
-                coperta_appended = 0
+                    #get text with teseract & potential city name
+                    textSplit = getSplitText(urlPage)
+                    front_page += textSplit
+                    pot_city_name = getPotCityName(textSplit)
+                    coperta_appended = 0
 
-                if 'coperta' not in pagesData[i]['label']:
-                    coperta = False
+                    if 'coperta' not in pagesData[i]['label']:
+                        coperta = False
+                except:
+                    print('page missing')
+                    break
 
 
 
