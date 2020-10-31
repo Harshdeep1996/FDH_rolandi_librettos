@@ -1,7 +1,21 @@
 #mapid { 
-  height: 80%; 
+  height: 100%; 
   width: 76%;
   font-family: "Lucida Console", Courier, monospace;
+  float: left;
+}
+
+.fullcontainer {
+  height: 80%;
+  width: 100%;
+  float: left;
+}
+
+#scrollText {
+  height: 100%;
+  width: 24%;
+  background-color: green;
+  float: right;
 }
 
 body {

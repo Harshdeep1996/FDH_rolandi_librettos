@@ -59,6 +59,7 @@ function doStuff(data) {
      span.innerHTML = '|';
      step_list.appendChild(span);
 
+     // for the labels
      var span_two = document.createElement("span");
      span_two.innerHTML = ranges[index];
      span_two.style.marginTop = "-14px";
@@ -80,6 +81,13 @@ function parseData(url, callBack) {
 }
 parseData("http://0.0.0.0:1234/data/get_librettos.csv", doStuff);
 
+function hoverAndDoThings() {
+    // Make a textual pane when we find the city and click on the point
+    // and then we remove it, when we click on something else
+    var city_name = this._tooltip._content.split(":")[2];
+    console.log(city_name);
+}
+
 function plotIntensityMap(cityResults) {    
     // console.log(cityResults);
     Object.keys(cityResults).forEach(function(o){
@@ -88,10 +96,12 @@ function plotIntensityMap(cityResults) {
         // Adding a marker and an associated popup
         // Use circle marker to get the right radius
         var marker = L.circleMarker([lat, long], {color: 'grey', fillColor: 'rgb(123,61,63)', fillOpacity: 0.9, radius: 15}).addTo(mymap);
-        marker.bindTooltip("Number of librettos: " + cityResults[o] + " in city of: " + o, {permanent: false, className: "my-label", offset: [0, 0] });
+        marker.bindTooltip("Number of librettos: " + cityResults[o] + " in city of: " + o, {
+            permanent: false, className: "my-label", offset: [0, 0]
+        });
+        marker.on('click', hoverAndDoThings);
         mymap.addLayer(marker);
         markersCurrently.push(marker);
-        // marker.bindPopup("<b>Hello, this is " + o);
     });
 }
 
@@ -105,6 +115,7 @@ slider.oninput = function() {
     for (var index = 0; index < markersCurrently.length; index++) {
         mymap.removeLayer(markersCurrently[index]);
     }
+    markersCurrently = [];
   }
 
   var value_selected = slider.value / 10;
