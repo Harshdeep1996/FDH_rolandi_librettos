@@ -54,13 +54,14 @@ function doStuff(data) {
    for (var index = 0; index <= total_ranges - 1; index++) {
      dictYearsObj[index] = ranges[index];
      var span = document.createElement("span");
-     span.style.marginTop = "-7px";
+     span.style.marginTop = "-14px";
      span.style.marginLeft = "2px";
      span.innerHTML = '|';
      step_list.appendChild(span);
 
      var span_two = document.createElement("span");
      span_two.innerHTML = ranges[index];
+     span_two.style.marginTop = "-14px";
      step_list_two.appendChild(span_two);
    }
 }

@@ -1,6 +1,6 @@
 #mapid { 
   height: 80%; 
-  width: 90%;
+  width: 76%;
   font-family: "Lucida Console", Courier, monospace;
 }
 
@@ -9,7 +9,7 @@ body {
 }
 
 .slidecontainer {
-  width: 90%;
+  width: 76%;
   z-index: 10000000;
 }
 
@@ -43,58 +43,6 @@ body {
   cursor: pointer;
 }
 
-/* for the lines on the slider*/
-
-/*.menuwrapper {
-    height: auto;
-    text-align: justify;
-    -ms-text-justify: distribute-all-lines;
-    text-justify: distribute-all-lines;
-    margin-top: -10px;
-    margin-left: 5px;
-    margin-right: 3px;
-}
-*/
-/*div.menuwrapper {
-    display: table;
-    width: 100%;
-    table-layout: fixed;    /* For cells of equal size */
-
-/*.menuwrapper {text-align:justify;}
-.menuwrapper > a {display:inline-block}
-.menuwrapper:after { content:' '; display:inline-block; width: 100%; height: 0 }*/
-
+/*Adding the CSS for the tickmarks and the labels*/
 .menuwrapper { display: flex; justify-content: space-between; }
-
 .menuwrapper2 { display: flex; justify-content: space-between; }
-
-/*div.menuwrapper span {
-    display: table-cell;
-    text-align: center;
-}*/
-
-/*.menuitem {
-    width: auto;
-    height: 20px;
-    vertical-align: top;
-    display: inline-block;
-    color: black;
-}
-*/
-
-.menuwrapper2 {
-    height: auto;
-    text-align: justify;
-    -ms-text-justify: distribute-all-lines;
-    text-justify: distribute-all-lines;
-    margin-top: -20px;
-}
-
-/*.menuitem2 {
-    width: 50px;
-    height: 20px;
-    vertical-align: top;
-    display: inline-block;
-    text-align: center;
-    color: black;
-}*/
