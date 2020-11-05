@@ -9,7 +9,7 @@ L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}/{y}.png', {
     attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
     subdomains: 'abcd',
     // Fix the zoom, so that users cannot move the zoom
-    minZoom: 4,
+    minZoom: 5,
     maxZoom: 6
 }).addTo(mymap);
 
@@ -22,7 +22,14 @@ var dictYearsObj = {};
 var global_results = null;
 var latLongMap = {};
 var markersCurrently = [];
-var yearSelected = null;
+var zoomClick = false;
+
+// Indexes for array to trace in the data we retrieve from CSV
+const TITLE_INDEX = 2;
+const YEAR_INDEX = 3;
+const CITY_INDEX = 7;
+const LAT_INDEX = 8;
+const LONG_INDEX = 9;
 
 
 function doStuff(data) {
@@ -30,8 +37,8 @@ function doStuff(data) {
     var years = [];
 
     data.forEach(function (o) {
-      if (typeof o[3] !== 'string') {
-        years.push(parseInt(o[3], 10));
+      if (typeof o[YEAR_INDEX] !== 'string') {
+        years.push(parseInt(o[YEAR_INDEX], 10));
       }
     });
 
@@ -80,12 +87,13 @@ function parseData(url, callBack) {
     }
   });
 }
-parseData("http://0.0.0.0:1234/data/get_librettos.csv", doStuff);
 
-function hoverAndDoThings() {
+parseData("http://0.0.0.0:1234/data/get_librettos_dummies.csv", doStuff);
+
+function hoverAndDoThings(mouseObj, yearSelected) {
     // Make a textual pane when we find the city and click on the point
     // and then we remove it, when we click on something else
-    var city_name = this._tooltip._content.split(":")[2].replace(/\s+/, "");
+    var city_name = mouseObj._tooltip._content.split(":")[2].replace(/\s+/, "");
     var scrollTextPane = document.getElementById('scrollText');
 
     // Remove the panel cards if some of them exists already
@@ -108,8 +116,7 @@ function hoverAndDoThings() {
     scrollTextPane.appendChild(h4);
 
     global_results.forEach(function (o) {
-      // console.log(o[3], o[3] >= yearSelected, o[3] <= yearSelected + 22, city_name, o[7], o[7] === city_name);
-      if ((typeof o[3] !== 'string') && ((o[3] >= yearSelected && (o[3] <= yearSelected + 22))) && (o[7] === city_name)) {
+      if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= yearSelected && (o[YEAR_INDEX] <= yearSelected + 22))) && (o[CITY_INDEX] === city_name)) {
         var div = document.createElement("div");
         div.setAttribute("class", "w3-panel w3-blue w3-card-4");
 
@@ -119,7 +126,7 @@ function hoverAndDoThings() {
         p_title.style.fontSize = "15px";
 
         var p_title_text = document.createElement("p");
-        p_title_text.innerHTML = o[2];
+        p_title_text.innerHTML = o[TITLE_INDEX];
         p_title_text.style.fontSize = "10px";
 
         // Adding year pane
@@ -128,7 +135,7 @@ function hoverAndDoThings() {
         p_title_year.style.fontSize = "15px";
 
         var p_title_year_text = document.createElement("p");
-        p_title_year_text.innerHTML = o[3];
+        p_title_year_text.innerHTML = o[YEAR_INDEX];
         p_title_year_text.style.fontSize = "10px";
 
         // Adding the paras to each child
@@ -141,7 +148,7 @@ function hoverAndDoThings() {
     });
 }
 
-function plotIntensityMap(cityResults) {    
+function plotIntensityMap(cityResults, yearSelected) {    
     // console.log(cityResults);
     Object.keys(cityResults).forEach(function(o){
         var lat = latLongMap[o][0];
@@ -152,7 +159,17 @@ function plotIntensityMap(cityResults) {
         marker.bindTooltip("Number of librettos: " + cityResults[o] + " in city of: " + o, {
             permanent: false, className: "my-label", offset: [0, 0]
         });
-        marker.on('click', hoverAndDoThings);
+        marker.on('click', function(){
+          if(!zoomClick) {
+            // Check if you are zoomed in or not, if you are zoom out
+            hoverAndDoThings(this, yearSelected);
+            zoomClick = true;
+          } else {
+            // Zoom in into the point if you click again
+            console.log("I want to zoom");
+            zoomClick = false;
+          }
+        });
         mymap.addLayer(marker);
         markersCurrently.push(marker);
     });
@@ -173,15 +190,14 @@ slider.oninput = function() {
 
   var value_selected = slider.value / 10;
   // console.log(value_selected / 10);
-  yearSelected = dictYearsObj[value_selected];
 
   var getSubResult = {};
   global_results.forEach(function (o) {
-    if ((typeof o[3] !== 'string') && ((o[3 ] >= dictYearsObj[value_selected]) && (o[3] <= dictYearsObj[value_selected] + 22))) {
-        latLongMap[o[7]] = [o[8], o[9]];
-        getSubResult[o[7]] = (getSubResult[o[7]] || 0) + 1;
+    if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= dictYearsObj[value_selected]) && (o[YEAR_INDEX] <= dictYearsObj[value_selected] + 22))) {
+        latLongMap[o[CITY_INDEX]] = [o[LAT_INDEX], o[LONG_INDEX]];
+        getSubResult[o[CITY_INDEX]] = (getSubResult[o[CITY_INDEX]] || 0) + 1;
     }
   });
 
-  plotIntensityMap(getSubResult);
+  plotIntensityMap(getSubResult, dictYearsObj[value_selected]);
 }
