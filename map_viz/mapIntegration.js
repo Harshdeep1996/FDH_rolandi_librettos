@@ -9,7 +9,7 @@ L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}/{y}.png', {
     attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
     subdomains: 'abcd',
     // Fix the zoom, so that users cannot move the zoom
-    minZoom: 5,
+    minZoom: 4,
     maxZoom: 6
 }).addTo(mymap);
 
@@ -118,7 +118,7 @@ function hoverAndDoThings() {
         p_title.innerHTML = "Title";
         p_title.style.fontSize = "15px";
 
-        var p_title_text = document.createElement("p_title_text");
+        var p_title_text = document.createElement("p");
         p_title_text.innerHTML = o[2];
         p_title_text.style.fontSize = "10px";
 

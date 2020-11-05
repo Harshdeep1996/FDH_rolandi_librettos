@@ -45,6 +45,7 @@ body {
   outline: none;
   -webkit-transition: .2s;
   transition: opacity .2s;
+  margin-top: 5px;
 }
 
 .slider:hover {
