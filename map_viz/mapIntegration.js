@@ -1,17 +1,6 @@
-var mymap = L.map('mapid').setView([43, 11], 6);
-
-// Stop the map from moving on left and right, by user input
-mymap.dragging.disable();
-
-// Public token (for mapbox): pk.eyJ1IjoiaGFyc2hjczE5OTYiLCJhIjoiY2tndGdrcmZ3MGF0ZjJ6cGVtenNlMXdzOCJ9.xXRLIH9aN6I7W9bHyXK-ag
-
-L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}/{y}.png', {
-    attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-    subdomains: 'abcd',
-    // Fix the zoom, so that users cannot move the zoom
-    minZoom: 5,
-    maxZoom: 6
-}).addTo(mymap);
+// Global latitude and longiitude
+const globalLat = 43;
+const globalLong = 11;
 
 //Data is usable here
 var max_year = -Number.MAX_VALUE;
@@ -23,6 +12,7 @@ var global_results = null;
 var latLongMap = {};
 var markersCurrently = [];
 var zoomClick = false;
+var lastCityClicked = null;
 
 // Indexes for array to trace in the data we retrieve from CSV
 const TITLE_INDEX = 2;
@@ -30,7 +20,23 @@ const YEAR_INDEX = 3;
 const CITY_INDEX = 7;
 const LAT_INDEX = 8;
 const LONG_INDEX = 9;
+const THEATER_LAT = 15;
+const THEATER_LONG = 16;
 
+var mymap = L.map('mapid').setView([globalLat, globalLong], 6);
+
+// Stop the map from moving on left and right, by user input
+mymap.dragging.disable();
+
+// Public token (for mapbox): pk.eyJ1IjoiaGFyc2hjczE5OTYiLCJhIjoiY2tndGdrcmZ3MGF0ZjJ6cGVtenNlMXdzOCJ9.xXRLIH9aN6I7W9bHyXK-ag
+
+L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+    subdomains: 'abcd',
+    // Fix the zoom, so that users cannot move the zoom
+    minZoom: 5,
+    maxZoom: 10
+}).addTo(mymap);
 
 function doStuff(data) {
     //Data is usable here
@@ -93,8 +99,8 @@ parseData("http://0.0.0.0:1234/data/get_librettos_dummies.csv", doStuff);
 function hoverAndDoThings(mouseObj, yearSelected) {
     // Make a textual pane when we find the city and click on the point
     // and then we remove it, when we click on something else
-    var city_name = mouseObj._tooltip._content.split(":")[2].replace(/\s+/, "");
     var scrollTextPane = document.getElementById('scrollText');
+    var city_name = mouseObj._tooltip._content.split(":")[2].replace(/\s+/, "");
 
     // Remove the panel cards if some of them exists already
     if(scrollTextPane.children.length !== 0) {
@@ -148,31 +154,68 @@ function hoverAndDoThings(mouseObj, yearSelected) {
     });
 }
 
-function plotIntensityMap(cityResults, yearSelected) {    
-    // console.log(cityResults);
-    Object.keys(cityResults).forEach(function(o){
+function plotIntensityMap(cityCount, subTheatres, yearSelected) {    
+    // console.log(cityCount);
+    Object.keys(cityCount).forEach(function(o){
         var lat = latLongMap[o][0];
         var long = latLongMap[o][1];
         // Adding a marker and an associated popup
         // Use circle marker to get the right radius
         var marker = L.circleMarker([lat, long], {color: 'grey', fillColor: 'rgb(123,61,63)', fillOpacity: 0.9, radius: 15}).addTo(mymap);
-        marker.bindTooltip("Number of librettos: " + cityResults[o] + " in city of: " + o, {
+        marker._path.classList.add("cityMarker");
+        marker.bindTooltip("Number of librettos: " + cityCount[o] + " in city of: " + o, {
             permanent: false, className: "my-label", offset: [0, 0]
         });
+
+        // Get all the city markers
+        var allCityMarkers = document.getElementsByClassName("cityMarker");
+
         marker.on('click', function(){
-          if(!zoomClick) {
-            // Check if you are zoomed in or not, if you are zoom out
+          var temp_city_name = this._tooltip._content.split(":")[2].replace(/\s+/, "");
+          if(!zoomClick && ((temp_city_name !== lastCityClicked) || (lastCityClicked === null))) {
             hoverAndDoThings(this, yearSelected);
-            zoomClick = true;
+            lastCityClicked = temp_city_name;
           } else {
             // Zoom in into the point if you click again
-            console.log("I want to zoom");
+            subTheatres[temp_city_name].forEach(function(coord) {
+            var theatre_marker = L.circleMarker(
+              coord, {color: 'skyblue', fillColor: 'black', 
+              fillOpacity: 0.2, radius: 10}).addTo(mymap);
+            theatre_marker._path.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
+            theatre_marker.on('click', function(){
+              revertBackToCityView(allCityMarkers);
+              lastCityClicked = null;
+            });
+          });
+
+            // Remove all the city markers since we are zoomed into a region
+            for(i = 0; i < allCityMarkers.length; i++) {
+              allCityMarkers[i].style.display = 'none';
+            }
+            mymap.flyTo([latLongMap[temp_city_name][0], latLongMap[temp_city_name][1]], 10);
+            lastCityClicked = temp_city_name;
             zoomClick = false;
           }
         });
         mymap.addLayer(marker);
         markersCurrently.push(marker);
     });
+}
+
+function revertBackToCityView(allCityMarkers) {
+  // Check if you are zoomed in or not, if you are zoom out
+  var allTheatreMarkers = document.getElementsByClassName("theatreMarker");
+  // pop off each of the theatre markers
+  while (allTheatreMarkers.length > 0) {
+    allTheatreMarkers[0].parentNode.removeChild(allTheatreMarkers[0]);
+  }
+
+  // Set the display back for all the city markers
+  for(i = 0; i < allCityMarkers.length; i++) {
+    allCityMarkers[i].style.display = 'initial';
+  }
+  mymap.flyTo([globalLat, globalLong], 6);
+  zoomClick = false;
 }
 
 // Detecting the slider in HTML
@@ -191,13 +234,16 @@ slider.oninput = function() {
   var value_selected = slider.value / 10;
   // console.log(value_selected / 10);
 
-  var getSubResult = {};
+  var getIntensityCount = {};
+  var getSubTheatres = {};
   global_results.forEach(function (o) {
     if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= dictYearsObj[value_selected]) && (o[YEAR_INDEX] <= dictYearsObj[value_selected] + 22))) {
         latLongMap[o[CITY_INDEX]] = [o[LAT_INDEX], o[LONG_INDEX]];
-        getSubResult[o[CITY_INDEX]] = (getSubResult[o[CITY_INDEX]] || 0) + 1;
+        getIntensityCount[o[CITY_INDEX]] = (getIntensityCount[o[CITY_INDEX]] || 0) + 1;
+        getSubTheatres[o[CITY_INDEX]] = getSubTheatres[o[CITY_INDEX]] || [];
+        getSubTheatres[o[CITY_INDEX]].push([o[THEATER_LAT], o[THEATER_LONG]]);
     }
   });
 
-  plotIntensityMap(getSubResult, dictYearsObj[value_selected]);
+  plotIntensityMap(getIntensityCount, getSubTheatres, dictYearsObj[value_selected]);
 }
