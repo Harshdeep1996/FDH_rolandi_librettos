@@ -5,6 +5,10 @@
   float: left;
 }
 
+h4 {
+  font-family: "Lucida Console", Courier, monospace;
+}
+
 .fullcontainer {
   height: 80%;
   width: 100%;
@@ -14,8 +18,14 @@
 #scrollText {
   height: 100%;
   width: 24%;
-  background-color: green;
+  /*background-color: green;*/
   float: right;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+.w3-blue, .w3-hover-blue {
+  background-color: black !important;
 }
 
 body {

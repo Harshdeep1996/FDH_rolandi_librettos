@@ -22,6 +22,7 @@ var dictYearsObj = {};
 var global_results = null;
 var latLongMap = {};
 var markersCurrently = [];
+var yearSelected = null;
 
 
 function doStuff(data) {
@@ -84,8 +85,60 @@ parseData("http://0.0.0.0:1234/data/get_librettos.csv", doStuff);
 function hoverAndDoThings() {
     // Make a textual pane when we find the city and click on the point
     // and then we remove it, when we click on something else
-    var city_name = this._tooltip._content.split(":")[2];
-    console.log(city_name);
+    var city_name = this._tooltip._content.split(":")[2].replace(/\s+/, "");
+    var scrollTextPane = document.getElementById('scrollText');
+
+    // Remove the panel cards if some of them exists already
+    if(scrollTextPane.children.length !== 0) {
+      var panels = document.getElementsByClassName("w3-panel w3-blue w3-card-4");
+      // pop off each of the panels
+      while (panels.length > 0) {
+        panels[0].parentNode.removeChild(panels[0]);
+      }
+      var heading = document.getElementsByClassName("headingFDHPanel")[0];
+      heading.parentNode.removeChild(heading);
+    }
+
+    // Adding heading for the right bar
+    var h4 = document.createElement("h4");
+    h4.setAttribute("class", "headingFDHPanel");
+    h4.innerHTML = "List of Librettos for years: " + "<b>" + yearSelected + "-" + (yearSelected + 22) + "</b>" + " in city: " + "<b>" + city_name + "</b>";
+    h4.style.fontSize = "21px";
+    h4.style.textAlign = "center";
+    scrollTextPane.appendChild(h4);
+
+    global_results.forEach(function (o) {
+      // console.log(o[3], o[3] >= yearSelected, o[3] <= yearSelected + 22, city_name, o[7], o[7] === city_name);
+      if ((typeof o[3] !== 'string') && ((o[3] >= yearSelected && (o[3] <= yearSelected + 22))) && (o[7] === city_name)) {
+        var div = document.createElement("div");
+        div.setAttribute("class", "w3-panel w3-blue w3-card-4");
+
+        // Adding title pane
+        var p_title = document.createElement("p");
+        p_title.innerHTML = "Title";
+        p_title.style.fontSize = "15px";
+
+        var p_title_text = document.createElement("p_title_text");
+        p_title_text.innerHTML = o[2];
+        p_title_text.style.fontSize = "10px";
+
+        // Adding year pane
+        var p_title_year = document.createElement("p");
+        p_title_year.innerHTML = "Year";
+        p_title_year.style.fontSize = "15px";
+
+        var p_title_year_text = document.createElement("p");
+        p_title_year_text.innerHTML = o[3];
+        p_title_year_text.style.fontSize = "10px";
+
+        // Adding the paras to each child
+        div.appendChild(p_title);
+        div.appendChild(p_title_text);
+        div.appendChild(p_title_year);
+        div.appendChild(p_title_year_text);
+        scrollTextPane.appendChild(div);
+      }
+    });
 }
 
 function plotIntensityMap(cityResults) {    
@@ -120,6 +173,7 @@ slider.oninput = function() {
 
   var value_selected = slider.value / 10;
   // console.log(value_selected / 10);
+  yearSelected = dictYearsObj[value_selected];
 
   var getSubResult = {};
   global_results.forEach(function (o) {
