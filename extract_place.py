@@ -224,7 +224,7 @@ for idx, filename in enumerate(os.listdir(inPath)):
 
             if (idx+1)  % 10 == 0:
                 print(df_librettos)
-                df_librettos.columns = columns
+                df_librettos.columns = columnas
                 df_librettos.to_pickle(outPath+'librettos.pkl')
                 df_librettos.to_csv(outPath+'librettos.csv', index=False, sep='\t', header=True)
 
