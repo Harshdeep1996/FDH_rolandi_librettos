@@ -93,16 +93,16 @@ def cityDic():
             city_name = city[key]['name']
             cityList.append(city_name.lower())
             citiyDic[city_name.lower()] = city[key]
-            '''
+
             #it_city_name = translator.translate(city_name, dest='it').text
             translator = Translator(to_lang="it")
             it_city_name = translator.translate(city_name)
 
             if it_city_name != city_name:
-                cityList.append(translation.lower())
-                citiyDic[translation.lower()] = city[key]
+                cityList.append(it_city_name.lower())
+                citiyDic[it_city_name.lower()] = city[key]
             n+=1
-            '''
+
     cityFilter = ['livorno',] # 'nice']
     cityList = list(filter(lambda a: a not in cityFilter, cityList))
     cityList.append('barcellona')
@@ -124,6 +124,8 @@ filter_pot_city = ['casale', 'vittoria', 'desio', 'nola', 'bali', 'mira', 'sora'
 
 
 european_dic, european_cities = cityDic()
+
+
 italian_dic, italian_cities = cityDicItaly()
 
 european_dic = {**european_dic, **italian_dic}
@@ -173,6 +175,7 @@ for ind, cop in enumerate(df_librettos.coperta.tolist()):
             print(word)
             #print(cop)
             city_no+=1
+            Pot_city_name_fuzzy[ind].append(word)
 
 
 print(city_no)
@@ -226,5 +229,5 @@ df_librettos['city_name'] = city_name
 df_librettos['latitude'] = latitude
 df_librettos['longitude'] = longitude
 
-df_librettos.to_pickle(inPath+'librettos_2.pkl')
-df_librettos.to_csv(inPath+'librettos_2.csv', index=False, sep='\t', header=True)
+df_librettos.to_pickle(inPath+'librettos_ver_best.pkl')
+df_librettos.to_csv(inPath+'librettos_ver_best.csv', index=False, sep='\t', header=True)
