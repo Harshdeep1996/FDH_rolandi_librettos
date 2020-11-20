@@ -97,6 +97,25 @@ function parseData(url, callBack) {
 
 parseData("http://0.0.0.0:1234/data/get_librettos_dummies.csv", doStuff);
 
+function insertDropdown (quantity) {
+  // Make dropdown menu
+  var div = document.createElement('select');
+  div.setAttribute("name", "platform");
+
+  // This will not work for more than 2 sequences
+  let options = ['Original Map sequence', 'Cities composer played'];
+
+  for (let i=0; i < quantity; i++) {
+    var option = document.createElement('option');
+    option.setAttribute("value", i)
+    option.innerHTML = options[i];
+    div.appendChild(option)
+  }
+  // div.style.boxSizing = 'content-box';
+  // div.style.padding = '5px 0';
+  return div
+}
+
 function hoverAndDoThings(mouseObj, yearSelected) {
     // Make a textual pane when we find the city and click on the point
     // and then we remove it, when we click on something else
@@ -123,7 +142,7 @@ function hoverAndDoThings(mouseObj, yearSelected) {
     scrollTextPane.appendChild(h4);
 
     global_results.forEach(function (o) {
-      if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= yearSelected && (o[YEAR_INDEX] <= yearSelected + 22))) && (o[CITY_INDEX] === city_name)) {
+      if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= yearSelected && (o[YEAR_INDEX] < yearSelected + 22))) && (o[CITY_INDEX] === city_name)) {
         var div = document.createElement("div");
         div.setAttribute("class", "w3-panel w3-blue w3-card-4");
 
@@ -148,14 +167,20 @@ function hoverAndDoThings(mouseObj, yearSelected) {
         // Add composer information to the information pane
         var p_title_composer = null;
         var p_title_composer_text = null;
+        var dropdown_div = null;
+        var composer_div = null;
         if(o[COMPOSER_INDEX] !== 'Not found') {
           p_title_composer = document.createElement("p");
           p_title_composer.innerHTML = "Composer";
           p_title_composer.style.fontSize = "15px";
+          p_title_composer.style.display = "inline";
 
           p_title_composer_text = document.createElement("p");
           p_title_composer_text.innerHTML = o[COMPOSER_INDEX];
           p_title_composer_text.style.fontSize = "10px";
+          dropdown_div = insertDropdown(2);
+          dropdown_div.style.display = "inline";
+          dropdown_div.style.marginLeft = "5px";
         }
 
         // Adding the paras to each child
@@ -164,7 +189,11 @@ function hoverAndDoThings(mouseObj, yearSelected) {
         div.appendChild(p_title_year);
         div.appendChild(p_title_year_text);
         if(p_title_composer != null) {
-          div.appendChild(p_title_composer);
+          composer_div = document.createElement("div");
+          composer_div.appendChild(p_title_composer);
+          composer_div.appendChild(dropdown_div);
+          composer_div.style.width = "100%";
+          div.appendChild(composer_div);
           div.appendChild(p_title_composer_text);
         }
         scrollTextPane.appendChild(div);
