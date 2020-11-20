@@ -154,14 +154,17 @@ function hoverAndDoThings(mouseObj, yearSelected) {
     });
 }
 
-function plotIntensityMap(cityCount, subTheatres, yearSelected) {    
-    // console.log(cityCount);
+function plotIntensityMap(cityCount, subTheatres, yearSelected, totalLibrettoCount) {
     Object.keys(cityCount).forEach(function(o){
         var lat = latLongMap[o][0];
         var long = latLongMap[o][1];
         // Adding a marker and an associated popup
         // Use circle marker to get the right radius
-        var marker = L.circleMarker([lat, long], {color: 'grey', fillColor: 'rgb(123,61,63)', fillOpacity: 0.9, radius: 15}).addTo(mymap);
+        var int_rad = (cityCount[o] / totalLibrettoCount) * 50;
+        var marker = L.circleMarker(
+          [lat, long], {
+            color: 'grey', fillColor: 'rgb(123,61,63)', 
+            fillOpacity: 0.9, radius: int_rad}).addTo(mymap);
         marker._path.classList.add("cityMarker");
         marker.bindTooltip("Number of librettos: " + cityCount[o] + " in city of: " + o, {
             permanent: false, className: "my-label", offset: [0, 0]
@@ -236,14 +239,18 @@ slider.oninput = function() {
 
   var getIntensityCount = {};
   var getSubTheatres = {};
+  var totalLibrettoCount = 0;
   global_results.forEach(function (o) {
     if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= dictYearsObj[value_selected]) && (o[YEAR_INDEX] <= dictYearsObj[value_selected] + 22))) {
         latLongMap[o[CITY_INDEX]] = [o[LAT_INDEX], o[LONG_INDEX]];
         getIntensityCount[o[CITY_INDEX]] = (getIntensityCount[o[CITY_INDEX]] || 0) + 1;
         getSubTheatres[o[CITY_INDEX]] = getSubTheatres[o[CITY_INDEX]] || [];
         getSubTheatres[o[CITY_INDEX]].push([o[THEATER_LAT], o[THEATER_LONG]]);
+        totalLibrettoCount += 1
     }
   });
 
-  plotIntensityMap(getIntensityCount, getSubTheatres, dictYearsObj[value_selected]);
+  plotIntensityMap(
+    getIntensityCount, getSubTheatres,
+    dictYearsObj[value_selected], totalLibrettoCount);
 }
