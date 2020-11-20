@@ -18,6 +18,7 @@ var lastCityClicked = null;
 const TITLE_INDEX = 2;
 const YEAR_INDEX = 3;
 const CITY_INDEX = 7;
+const COMPOSER_INDEX = 14;
 const LAT_INDEX = 8;
 const LONG_INDEX = 9;
 const THEATER_LAT = 15;
@@ -144,11 +145,28 @@ function hoverAndDoThings(mouseObj, yearSelected) {
         p_title_year_text.innerHTML = o[YEAR_INDEX];
         p_title_year_text.style.fontSize = "10px";
 
+        // Add composer information to the information pane
+        var p_title_composer = null;
+        var p_title_composer_text = null;
+        if(o[COMPOSER_INDEX] !== 'Not found') {
+          p_title_composer = document.createElement("p");
+          p_title_composer.innerHTML = "Composer";
+          p_title_composer.style.fontSize = "15px";
+
+          p_title_composer_text = document.createElement("p");
+          p_title_composer_text.innerHTML = o[COMPOSER_INDEX];
+          p_title_composer_text.style.fontSize = "10px";
+        }
+
         // Adding the paras to each child
         div.appendChild(p_title);
         div.appendChild(p_title_text);
         div.appendChild(p_title_year);
         div.appendChild(p_title_year_text);
+        if(p_title_composer != null) {
+          div.appendChild(p_title_composer);
+          div.appendChild(p_title_composer_text);
+        }
         scrollTextPane.appendChild(div);
       }
     });
@@ -160,11 +178,13 @@ function plotIntensityMap(cityCount, subTheatres, yearSelected, totalLibrettoCou
         var long = latLongMap[o][1];
         // Adding a marker and an associated popup
         // Use circle marker to get the right radius
-        var int_rad = (cityCount[o] / totalLibrettoCount) * 50;
+        var int_rad = cityCount[o] === 1 ? (0.01/ totalLibrettoCount) : (cityCount[o] / totalLibrettoCount);
+        // [0,1] => [2,25]
+        var map_int_rad = 10 + ((int_rad * 23)/(0.5))
         var marker = L.circleMarker(
           [lat, long], {
             color: 'grey', fillColor: 'rgb(123,61,63)', 
-            fillOpacity: 0.9, radius: int_rad}).addTo(mymap);
+            fillOpacity: 0.9, radius: map_int_rad}).addTo(mymap);
         marker._path.classList.add("cityMarker");
         marker.bindTooltip("Number of librettos: " + cityCount[o] + " in city of: " + o, {
             permanent: false, className: "my-label", offset: [0, 0]
