@@ -9,10 +9,12 @@ var min_year = Number.MAX_VALUE;
 // Index containing the year, and maps the value selected on the slider 
 var dictYearsObj = {};
 var global_results = null;
+var composer_links = null;
 var latLongMap = {};
 var markersCurrently = [];
 var zoomClick = false;
 var lastCityClicked = null;
+var yearSelected = null;
 
 // Indexes for array to trace in the data we retrieve from CSV
 const TITLE_INDEX = 2;
@@ -31,7 +33,7 @@ mymap.dragging.disable();
 
 // Public token (for mapbox): pk.eyJ1IjoiaGFyc2hjczE5OTYiLCJhIjoiY2tndGdrcmZ3MGF0ZjJ6cGVtenNlMXdzOCJ9.xXRLIH9aN6I7W9bHyXK-ag
 
-L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}/{y}.png', {
+var tileLayer = L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}/{y}.png', {
     attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
     subdomains: 'abcd',
     // Fix the zoom, so that users cannot move the zoom
@@ -96,27 +98,74 @@ function parseData(url, callBack) {
 }
 
 parseData("http://0.0.0.0:1234/data/get_librettos_dummies.csv", doStuff);
+// Create a promise to load the file or throw an error
+dfd.read_csv("http://0.0.0.0:1234/data/composer_links.csv")
+.then(df => {
+    composer_links = df;
+    console.log("Loaded the composer links");
+}).catch(err => {
+    console.log(err);
+})
 
-function insertDropdown (quantity) {
+
+function insertDropdown () {
   // Make dropdown menu
   var div = document.createElement('select');
   div.setAttribute("name", "platform");
-
   // This will not work for more than 2 sequences
-  let options = ['Original Map sequence', 'Cities composer played'];
-
-  for (let i=0; i < quantity; i++) {
-    var option = document.createElement('option');
-    option.setAttribute("value", i)
-    option.innerHTML = options[i];
-    div.appendChild(option)
-  }
-  // div.style.boxSizing = 'content-box';
-  // div.style.padding = '5px 0';
+  var option = document.createElement('option');
+  option.setAttribute("value", 0);
+  option.innerHTML = 'Original Map sequence';
+  div.appendChild(option);
+  var option_two = document.createElement('option');
+  option_two.setAttribute("value", 1);
+  option_two.innerHTML = 'Cities composer played';
+  div.appendChild(option_two);
   return div
 }
 
-function hoverAndDoThings(mouseObj, yearSelected) {
+function createLinks() {
+  var sameYearComposer = composer_links.query(
+    {column: "lower_bounds", is: "==", to: "1760"});
+  var allCitiesLabels = [];
+  for(let i=0; i < sameYearComposer.shape[0]; i++) {
+    var city_list = sameYearComposer['cities'].data[i].replace(
+      '}', '').replace('{', '').replace(/'/g,'').split(', ');
+    allCitiesLabels.push('cityMarker-' + city_list[0]);
+    allCitiesLabels.push('cityMarker-' + city_list[1]);
+    // From src to the destination
+    var pointList = [latLongMap[city_list[0]], latLongMap[city_list[1]]];
+    var link_path = new L.Polyline(pointList, {
+      color: 'red',
+      weight: 3,
+      opacity: 0.5,
+      smoothFactor: 1,
+      className: 'linkLine'
+    });
+    console.log(link_path);
+    link_path.addTo(mymap);
+  }
+  document.querySelectorAll("[id^='cityMarker-']").forEach(function(o) {
+    if(allCitiesLabels.includes(o.id)) {
+      o.style.display = 'initial';
+    } else {
+      o.style.display = 'none';
+    }
+  })
+}
+
+function deleteLinks() {
+  document.querySelectorAll("[id^='cityMarker-']").forEach(function(o) {
+    o.style.display = 'initial';
+  });
+  var allLinkLines = document.getElementsByClassName("linkLine");
+  // pop off each of the theatre markers
+  while (allLinkLines.length > 0) {
+    allLinkLines[0].parentNode.removeChild(allLinkLines[0]);
+  }
+}
+
+function hoverAndDoThings(mouseObj) {
     // Make a textual pane when we find the city and click on the point
     // and then we remove it, when we click on something else
     var scrollTextPane = document.getElementById('scrollText');
@@ -174,13 +223,6 @@ function hoverAndDoThings(mouseObj, yearSelected) {
           p_title_composer.innerHTML = "Composer";
           p_title_composer.style.fontSize = "15px";
           p_title_composer.style.display = "inline";
-
-          p_title_composer_text = document.createElement("p");
-          p_title_composer_text.innerHTML = o[COMPOSER_INDEX];
-          p_title_composer_text.style.fontSize = "10px";
-          dropdown_div = insertDropdown(2);
-          dropdown_div.style.display = "inline";
-          dropdown_div.style.marginLeft = "5px";
         }
 
         // Adding the paras to each child
@@ -189,11 +231,32 @@ function hoverAndDoThings(mouseObj, yearSelected) {
         div.appendChild(p_title_year);
         div.appendChild(p_title_year_text);
         if(p_title_composer != null) {
-          composer_div = document.createElement("div");
-          composer_div.appendChild(p_title_composer);
-          composer_div.appendChild(dropdown_div);
-          composer_div.style.width = "100%";
-          div.appendChild(composer_div);
+          p_title_composer_text = document.createElement("p");
+          p_title_composer_text.innerHTML = o[COMPOSER_INDEX];
+          p_title_composer_text.style.fontSize = "10px";
+          // Create only dropdowns where we can see the multiple links
+          if(composer_links['lower_bounds'].data.includes(yearSelected) && composer_links["composer"].data.includes(o[COMPOSER_INDEX])) {
+            composer_div = document.createElement("div");
+            composer_div.appendChild(p_title_composer);
+            dropdown_div = insertDropdown();
+            dropdown_div.style.display = "inline";
+            dropdown_div.style.marginLeft = "5px";
+
+            dropdown_div.onchange = function () {
+              if(dropdown_div.selectedIndex == 0) {
+                tileLayer.setOpacity(1);
+                deleteLinks();
+              } else {
+                tileLayer.setOpacity(0.4);
+                createLinks();
+              }
+            };
+            composer_div.appendChild(dropdown_div);
+            composer_div.style.width = "100%";
+            div.appendChild(composer_div);
+          } else {
+            div.appendChild(p_title_composer);
+          }
           div.appendChild(p_title_composer_text);
         }
         scrollTextPane.appendChild(div);
@@ -201,7 +264,8 @@ function hoverAndDoThings(mouseObj, yearSelected) {
     });
 }
 
-function plotIntensityMap(cityCount, subTheatres, yearSelected, totalLibrettoCount) {
+function plotIntensityMap(cityCount, subTheatres, totalLibrettoCount) {
+    var allCityMarkers = []
     Object.keys(cityCount).forEach(function(o){
         var lat = latLongMap[o][0];
         var long = latLongMap[o][1];
@@ -214,39 +278,42 @@ function plotIntensityMap(cityCount, subTheatres, yearSelected, totalLibrettoCou
           [lat, long], {
             color: 'grey', fillColor: 'rgb(123,61,63)', 
             fillOpacity: 0.9, radius: map_int_rad}).addTo(mymap);
-        marker._path.classList.add("cityMarker");
+        marker._path.id = "cityMarker-" + o;
         marker.bindTooltip("Number of librettos: " + cityCount[o] + " in city of: " + o, {
             permanent: false, className: "my-label", offset: [0, 0]
         });
 
         // Get all the city markers
-        var allCityMarkers = document.getElementsByClassName("cityMarker");
+        allCityMarkers.push(marker.getElement());
 
         marker.on('click', function(){
           var temp_city_name = this._tooltip._content.split(":")[2].replace(/\s+/, "");
           if(!zoomClick && ((temp_city_name !== lastCityClicked) || (lastCityClicked === null))) {
-            hoverAndDoThings(this, yearSelected);
+            hoverAndDoThings(this);
             lastCityClicked = temp_city_name;
           } else {
             // Zoom in into the point if you click again
-            subTheatres[temp_city_name].forEach(function(coord) {
-            var theatre_marker = L.circleMarker(
-              coord, {color: 'skyblue', fillColor: 'black', 
-              fillOpacity: 0.2, radius: 10}).addTo(mymap);
-            theatre_marker._path.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
-            theatre_marker.on('click', function(){
-              revertBackToCityView(allCityMarkers);
-              lastCityClicked = null;
-            });
-          });
+            // TODO: remove this IF statement once we receive data for theatre
+            if((yearSelected === 1848) && (temp_city_name === 'Venice')) {
+                  subTheatres[temp_city_name].forEach(function(coord) {
+                var theatre_marker = L.circleMarker(
+                  coord, {color: 'skyblue', fillColor: 'black', 
+                  fillOpacity: 0.2, radius: 10}).addTo(mymap);
+                theatre_marker._path.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
+                theatre_marker.on('click', function(){
+                  revertBackToCityView(allCityMarkers);
+                  lastCityClicked = null;
+                });
+              });
 
-            // Remove all the city markers since we are zoomed into a region
-            for(i = 0; i < allCityMarkers.length; i++) {
-              allCityMarkers[i].style.display = 'none';
+              // Remove all the city markers since we are zoomed into a region
+              for(i = 0; i < allCityMarkers.length; i++) {
+                allCityMarkers[i].style.display = 'none';
+              }
+              mymap.flyTo([latLongMap[temp_city_name][0], latLongMap[temp_city_name][1]], 10);
+              lastCityClicked = temp_city_name;
+              zoomClick = false;
             }
-            mymap.flyTo([latLongMap[temp_city_name][0], latLongMap[temp_city_name][1]], 10);
-            lastCityClicked = temp_city_name;
-            zoomClick = false;
           }
         });
         mymap.addLayer(marker);
@@ -284,13 +351,14 @@ slider.oninput = function() {
   }
 
   var value_selected = slider.value / 10;
-  // console.log(value_selected / 10);
+  yearSelected = dictYearsObj[value_selected];
+  console.log('Year changed', yearSelected)
 
   var getIntensityCount = {};
   var getSubTheatres = {};
   var totalLibrettoCount = 0;
   global_results.forEach(function (o) {
-    if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= dictYearsObj[value_selected]) && (o[YEAR_INDEX] <= dictYearsObj[value_selected] + 22))) {
+    if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= yearSelected) && (o[YEAR_INDEX] < yearSelected + 22))) {
         latLongMap[o[CITY_INDEX]] = [o[LAT_INDEX], o[LONG_INDEX]];
         getIntensityCount[o[CITY_INDEX]] = (getIntensityCount[o[CITY_INDEX]] || 0) + 1;
         getSubTheatres[o[CITY_INDEX]] = getSubTheatres[o[CITY_INDEX]] || [];
@@ -300,6 +368,5 @@ slider.oninput = function() {
   });
 
   plotIntensityMap(
-    getIntensityCount, getSubTheatres,
-    dictYearsObj[value_selected], totalLibrettoCount);
+    getIntensityCount, getSubTheatres, totalLibrettoCount);
 }
