@@ -5,6 +5,7 @@ key = 'AIzaSyDO9Hf9LcmDIgXH_jB4pUlMcogZpYcr860'
 geolocator = Nominatim(user_agent=key)
 
 locations = pd.read_csv('./data/librettos.csv', delimiter='	')
+locations = pd.read_pickle('./data/librettos.pkl')
 
 expr = r'''dramma|drama|melodramma|melodrama|melo-dramma|oratorio|favola pastorale|fauola musicale|burletta in musica|componimento sagro|azione musicale|componimento sacro|per musica|opera|tragedia|spettacolo fantastico|scena in versi|fauola tragicomica|fauola pastorale|diuertimento comico|azione romantica|farsa|commeddia|commedia|operetta|festa|cantata|intermezzo in musica|intermezzi|favola in prosa|componimento sagro|componimento|azione sacra|actio sacra|fiaba|libretto fantastico|libretto|fauola|favola|([a-rt-z])\. ''' 
 locations['title_opera'] = [re.split(expr,s.lower())[0].strip().strip(',') if len(re.split(expr,s.lower())) > 0 else s for s in locations.title]
@@ -48,3 +49,5 @@ locations['location_latitude'] = geolocate_column.apply(get_latitude)
 locations['location_longitude'] = geolocate_column.apply(get_longitude)
 
 locations.to_csv('./data/librettos_1.csv')
+locations.to_pickle('./data/librettos_1.pkl')
+locations = pd.read_pickle('./data/librettos.pkl')
