@@ -14,6 +14,17 @@ def notAllUpper(string):
             pass
         else: return True
 
+def makeListOutOfCsvString(csv_strings):
+    list_of_strings = []
+    for li in csv_strings:
+        temp = ''.join([i for i in li if i.isalpha() or i == ',' ])
+
+        temp = temp.split(',')
+        if len(temp[0])==0: temp = [] #Check that there are no empty strings
+        list_of_strings.append(temp)
+
+    return list_of_strings
+
 latin_letters= {}
 def is_latin(uchr):
     try: return latin_letters[uchr]
@@ -116,7 +127,9 @@ def cityDic():
 inPath = '/home/nulpe/Desktop/foundations_dh/data/'
 
 
-df_librettos = pd.read_pickle(inPath+'librettos.pkl')
+df_librettos = pd.read_pickle(inPath+'librettos_1.pkl')
+
+
 
 filter_pot_city = ['casale', 'vittoria', 'desio', 'nola', 'bali', 'mira', 'sora', 'sora',
                    'genzano', 'faro']
@@ -131,27 +144,28 @@ italian_dic, italian_cities = cityDicItaly()
 european_dic = {**european_dic, **italian_dic}
 
 city_names = df_librettos.pot_city_name.tolist()
+
 long = df_librettos.longitude.tolist()
 lat = df_librettos.latitude.tolist()
 popular_cities, location_pop_cities_dic = makeFamousOperaCitiesList(city_names, long, lat)
 
 
 
-Pot_city_name_fuzzy = df_librettos.pot_city_name.tolist()
+Pot_city_name_fuzzy = city_names
 
-pot_cities = df_librettos.pot_city_name.tolist()
-n=0
 
-k=0
-for lst in pot_cities:
-    if len(lst)>0: k+=1
-print(k)
 
 
 
 city_no = 0
+print('lets go')
+
+
+
 
 for ind, cop in enumerate(df_librettos.coperta.tolist()):
+    #print(cop)
+
     tempAddPotCity = []
     #Delete hand filtered cities
     for filter_city in filter_pot_city:
@@ -164,7 +178,7 @@ for ind, cop in enumerate(df_librettos.coperta.tolist()):
         for city in popular_cities:
             if city != word and similar(city, word) > 0.85:
                 Pot_city_name_fuzzy[ind].append(city)
-                n+=1
+
             elif city in word:
                 Pot_city_name_fuzzy[ind].append(city)
 
@@ -173,9 +187,10 @@ for ind, cop in enumerate(df_librettos.coperta.tolist()):
         word = word.lower()
         if word in european_cities:
             print(word)
-            #print(cop)
             city_no+=1
             Pot_city_name_fuzzy[ind].append(word)
+    if (ind+1)%50==0:
+        print('we are at position', ind, 'of in total', len(df_librettos.coperta.tolist()))
 
 
 print(city_no)
@@ -204,7 +219,7 @@ for pot_cities in Pot_city_name_fuzzy:
             temp_dic[city]+=1
         else:
             temp_dic[city] = 1
-    most_likely_city = 0
+
     if len(pot_cities)>0:
         numb_hits = temp_dic[pot_cities[0]]
         most_likely_city = pot_cities[0]
@@ -216,11 +231,12 @@ for pot_cities in Pot_city_name_fuzzy:
 
         latitude.append(european_dic[most_likely_city]['latitude'])
         longitude.append(european_dic[most_likely_city]['longitude'])
+        city_name.append(european_dic[most_likely_city]['name'])
 
     else:
         latitude.append(0)
         longitude.append(0)
-    city_name.append(most_likely_city)
+        city_name.append(0)
 
 
 

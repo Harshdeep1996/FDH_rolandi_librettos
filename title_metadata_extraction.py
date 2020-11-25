@@ -1,8 +1,8 @@
 import pandas as pd
 import re
 
-locations = pd.read_csv('./data/librettos.csv', delimiter='	')
-
+#locations = pd.read_csv('./data/librettos.csv', delimiter='	')
+locations = pd.read_pickle('./data/librettos.pkl')
 expr = r'''dramma|drama|melodramma|melodrama|melo-dramma|componimento sacro|per musica|opera|tragedia|spettacolo fantastico|azione romantica|farsa|con l'occasione|commeddia|commedia|operetta|festa|cantata|intermezzo in musica|intermezzi|\. ''' 
 locations['title_opera'] = [re.split(expr,s.lower())[0] if len(re.split(expr,s.lower())) > 0 else s for s in locations.title]
 
@@ -19,3 +19,9 @@ composer = r'per musica di|maestro|posta in musica dal|musica del sig\.|musica d
 locations['composer'] = [s[re.search(composer,s.lower()).span(0)[0] : re.search(composer,s.lower()).span(0)[1] + 20]  if re.search(composer,s.lower()) else 'Not found' for s in locations.title]
 
 locations.to_csv('./data/librettos_1.csv')
+locations.to_pickle('/home/nulpe/Desktop/foundations_dh/data/librettos_1.pkl')
+
+print(locations.pot_city_name.tolist())
+
+for potCity in locations.pot_city_name.tolist():
+    print(type(potCity))
