@@ -17,14 +17,15 @@ var lastCityClicked = null;
 var yearSelected = null;
 
 // Indexes for array to trace in the data we retrieve from CSV
-const TITLE_INDEX = 2;
-const YEAR_INDEX = 3;
-const CITY_INDEX = 7;
-const COMPOSER_INDEX = 14;
-const LAT_INDEX = 8;
-const LONG_INDEX = 9;
-const THEATER_LAT = 15;
-const THEATER_LONG = 16;
+const TITLE_INDEX = 4;
+const YEAR_INDEX = 5;
+const CITY_INDEX = 9;
+const LAT_INDEX = 10;
+const LONG_INDEX = 11;
+const COMPOSER_INDEX = 16;
+const THEATER_NAME = 20;
+const THEATER_LAT = 21;
+const THEATER_LONG = 22;
 
 var mymap = L.map('mapid').setView([globalLat, globalLong], 6);
 
@@ -38,7 +39,7 @@ var tileLayer = L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}
     subdomains: 'abcd',
     // Fix the zoom, so that users cannot move the zoom
     minZoom: 5,
-    maxZoom: 10
+    maxZoom: 15
 }).addTo(mymap);
 
 function doStuff(data) {
@@ -293,28 +294,44 @@ function plotIntensityMap(cityCount, subTheatres, totalLibrettoCount) {
             lastCityClicked = temp_city_name;
           } else {
             // Zoom in into the point if you click again
-            // TODO: remove this IF statement once we receive data for theatre
-            if((yearSelected === 1848) && (temp_city_name === 'Venice')) {
-                  subTheatres[temp_city_name].forEach(function(coord) {
-                var theatre_marker = L.circleMarker(
-                  coord, {color: 'skyblue', fillColor: 'black', 
-                  fillOpacity: 0.2, radius: 10}).addTo(mymap);
-                theatre_marker._path.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
-                theatre_marker.on('click', function(){
-                  revertBackToCityView(allCityMarkers);
-                  lastCityClicked = null;
-                });
-              });
+            console.log("Inside else 2 clicks", subTheatres);
+              for (var key in subTheatres) {
+                var key_list = key.split(',');
+                var key_city_name = key_list[0];
+                var key_lat = key_list[1];
+                var key_long = key_list[2];
+                if(temp_city_name === key_city_name) {
+                  var theatre_marker = L.circleMarker(
+                    [key_lat, key_long], {color: 'skyblue', fillColor: 'black', 
+                    fillOpacity: 0.2, radius: 10}).addTo(mymap);
+                  theatre_marker._path.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
+
+                  // Adding comment for the subtheaters
+                  var city_string = '';
+                  city_string += "<br>";
+                  for (const [index, element] of subTheatres[key].entries()) { 
+                    city_string += (index + 1) + ". " + element;
+                    city_string += "<br>";
+                  }
+                  console.log(city_string);
+                  theatre_marker.bindTooltip("For theaters: " + city_string + " in city of: " + temp_city_name, {
+                    permanent: false, className: "my-theater-label", offset: [0, 0]
+                  });
+                  theatre_marker.on('click', function(){
+                    revertBackToCityView(allCityMarkers);
+                    lastCityClicked = null;
+                  });
+                }
+              }
 
               // Remove all the city markers since we are zoomed into a region
               for(i = 0; i < allCityMarkers.length; i++) {
                 allCityMarkers[i].style.display = 'none';
               }
-              mymap.flyTo([latLongMap[temp_city_name][0], latLongMap[temp_city_name][1]], 10);
+              mymap.flyTo([latLongMap[temp_city_name][0], latLongMap[temp_city_name][1]], 14);
               lastCityClicked = temp_city_name;
               zoomClick = false;
             }
-          }
         });
         mymap.addLayer(marker);
         markersCurrently.push(marker);
@@ -324,9 +341,14 @@ function plotIntensityMap(cityCount, subTheatres, totalLibrettoCount) {
 function revertBackToCityView(allCityMarkers) {
   // Check if you are zoomed in or not, if you are zoom out
   var allTheatreMarkers = document.getElementsByClassName("theatreMarker");
+  var allTheatreLabels = document.getElementsByClassName("my-theater-label");
   // pop off each of the theatre markers
   while (allTheatreMarkers.length > 0) {
     allTheatreMarkers[0].parentNode.removeChild(allTheatreMarkers[0]);
+  }
+
+  while (allTheatreLabels.length > 0) {
+    allTheatreLabels[0].parentNode.removeChild(allTheatreLabels[0]);
   }
 
   // Set the display back for all the city markers
@@ -352,7 +374,6 @@ slider.oninput = function() {
 
   var value_selected = slider.value / 10;
   yearSelected = dictYearsObj[value_selected];
-  console.log('Year changed', yearSelected)
 
   var getIntensityCount = {};
   var getSubTheatres = {};
@@ -361,12 +382,23 @@ slider.oninput = function() {
     if ((typeof o[YEAR_INDEX] !== 'string') && ((o[YEAR_INDEX] >= yearSelected) && (o[YEAR_INDEX] < yearSelected + 22))) {
         latLongMap[o[CITY_INDEX]] = [o[LAT_INDEX], o[LONG_INDEX]];
         getIntensityCount[o[CITY_INDEX]] = (getIntensityCount[o[CITY_INDEX]] || 0) + 1;
-        getSubTheatres[o[CITY_INDEX]] = getSubTheatres[o[CITY_INDEX]] || [];
-        getSubTheatres[o[CITY_INDEX]].push([o[THEATER_LAT], o[THEATER_LONG]]);
+
+        var basic_key = o[CITY_INDEX] + ',' + o[THEATER_LAT] + ',' + o[THEATER_LONG];
+        if((o[THEATER_LAT] !== 'Not found') && (o[THEATER_LONG] !== 'Not found')) {
+            getSubTheatres[basic_key] = getSubTheatres[basic_key] || [];
+        }
+
+        // Do not put in the sub theaters which have lat long and not found
+        if((o[THEATER_LAT] !== 'Not found') && (o[THEATER_LONG] !== 'Not found')) {
+          if (basic_key in getSubTheatres) {
+            getSubTheatres[basic_key].push(o[THEATER_NAME]);
+          }
+        }
         totalLibrettoCount += 1
     }
   });
 
+  console.log('harsh', getSubTheatres);
   plotIntensityMap(
     getIntensityCount, getSubTheatres, totalLibrettoCount);
 }
