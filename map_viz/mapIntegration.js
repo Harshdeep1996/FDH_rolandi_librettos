@@ -41,6 +41,22 @@ var tileLayer = L.tileLayer('http://{s}.tile.stamen.com/toner-background/{z}/{x}
     minZoom: 5,
     maxZoom: 15
 }).addTo(mymap);
+tileLayer.setOpacity(0.7);
+
+// Adding leaf icon for marker
+var LeafIcon = L.Icon.extend({
+    options: {
+      iconSize:     [28, 75],
+      // iconAnchor:   [22, 94],
+      // popupAnchor:  [-3, -76]
+    }
+});
+
+// Adding icon for libretto
+var librettoIcon = new LeafIcon({iconUrl: 'book-solid.svg'});
+// Adding icon for theatre
+var theatreIcon = new LeafIcon({iconUrl: 'landmark-solid.svg'});
+
 
 function doStuff(data) {
     //Data is usable here
@@ -245,7 +261,7 @@ function hoverAndDoThings(mouseObj) {
 
             dropdown_div.onchange = function () {
               if(dropdown_div.selectedIndex == 0) {
-                tileLayer.setOpacity(1);
+                tileLayer.setOpacity(0.7);
                 deleteLinks();
               } else {
                 tileLayer.setOpacity(0.4);
@@ -275,11 +291,11 @@ function plotIntensityMap(cityCount, subTheatres, totalLibrettoCount) {
         var int_rad = cityCount[o] === 1 ? (0.01/ totalLibrettoCount) : (cityCount[o] / totalLibrettoCount);
         // [0,1] => [2,25]
         var map_int_rad = 10 + ((int_rad * 23)/(0.5))
-        var marker = L.circleMarker(
-          [lat, long], {
-            color: 'grey', fillColor: 'rgb(123,61,63)', 
-            fillOpacity: 0.9, radius: map_int_rad}).addTo(mymap);
-        marker._path.id = "cityMarker-" + o;
+        var marker = L.marker(
+          [lat, long], {icon: librettoIcon}).addTo(mymap);
+            // color: 'grey', fillColor: 'rgb(123,61,63)', 
+            // fillOpacity: 0.9, radius: map_int_rad})
+        marker._icon.id = "cityMarker-" + o;
         marker.bindTooltip("Number of librettos: " + cityCount[o] + " in city of: " + o, {
             permanent: false, className: "my-label", offset: [0, 0]
         });
@@ -301,10 +317,12 @@ function plotIntensityMap(cityCount, subTheatres, totalLibrettoCount) {
                 var key_lat = key_list[1];
                 var key_long = key_list[2];
                 if(temp_city_name === key_city_name) {
-                  var theatre_marker = L.circleMarker(
-                    [key_lat, key_long], {color: 'skyblue', fillColor: 'black', 
-                    fillOpacity: 0.2, radius: 10}).addTo(mymap);
-                  theatre_marker._path.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
+                  var theatre_marker = L.marker(
+                    [key_lat, key_long], 
+                    {icon: theatreIcon}
+                    // {color: 'skyblue', fillColor: 'black', fillOpacity: 0.2, radius: 10}
+                    ).addTo(mymap);
+                  theatre_marker._icon.classList.add("theatreMarker"); // path.leaflet-interactive.theatreMarker
 
                   // Adding comment for the subtheaters
                   var city_string = '';
