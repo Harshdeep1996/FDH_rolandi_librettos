@@ -139,7 +139,7 @@ for idx, cop in  enumerate(df_librettos.coperta.tolist()):
 print(len(meastroList))
 
 
-df_librettos['composers'] = meastroList
+df_librettos['inferred_composer'] = meastroList
 
 #save data frame
 df_librettos.to_csv(inPath+'librettos_3.csv', index=False, header=True)

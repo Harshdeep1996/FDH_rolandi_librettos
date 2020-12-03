@@ -67,6 +67,24 @@ def main(input_file, output_file):
                                            'Not found'
                                        for title in data.inferred_title
                                        ]
+
+    # extract information composer
+    data['composer_mediawiki_pageid'] = [ses.get(url=url, params={"action": "query",
+                                                               "format": "json",
+                                                               "list": "search",
+                                                               "srsearch": title}).json()
+                                            ['query']['search'][0]['pageid'] 
+                                       if ('query' in ses.get(url=url, params={"action": "query","format": "json",
+                                                                             "list": "search","srsearch": title})
+                                      .json().keys()) and (len(ses.get(url=url, params={"action": "query",
+                                                                       "format": "json",
+                                                                       "list": "search",
+                                                                       "srsearch": title}).json()
+                                              ['query']['search']) > 0)
+                                       else
+                                           'Not found'
+                                       for title in data.inferred_composer
+                                       ]
     
     print('step 3 done')
     
