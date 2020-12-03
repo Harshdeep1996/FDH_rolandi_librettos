@@ -4,7 +4,6 @@ import plac
 import spacy
 import shutil
 import requests
-import pandas as pd
 from PIL import Image
 import io
 import pytesseract
@@ -58,37 +57,19 @@ def extract_currency_relations(doc):
 
 
 inPath = '/home/nulpe/Desktop/foundations_dh/data/'
-
-
-#join Aurel & Ludovica df's
 df_librettos = pd.read_pickle(inPath+'librettos_ver_best.pkl')
-df_lib_2 = pd.read_csv(inPath+'librettos_2.csv').drop(['Unnamed: 0'], axis=1)
 
-join_columns = [col for col in df_lib_2.columns if col not in df_librettos.columns]
-
-print(df_librettos.columns)
-df_librettos.to_csv('/home/nulpe/Desktop/try_librettos.csv', index=False)
-print(join_columns)
-
-
-#searching for composers
-hit_words = ['musica di','maestro', 'posta in musica dal', 'musica del sig', 'musica del signor','musica è del sig', 'musicata da', 'musica']
-hit_words = ['maestro', 'musica', 'signore', 'sig.']
 
 n=0
-
 titles = df_librettos.title.tolist()
 
 meastroList = []
-
-
-
 
 for idx, cop in  enumerate(df_librettos.coperta.tolist()):
     tempDirector = []
 
     cop = [c.lower() for c in cop]
-
+    #search for hit word musica in combination with präposition di/del in copertas
     for indx, word in enumerate(cop):
         if word == 'musica':
 
@@ -101,6 +82,7 @@ for idx, cop in  enumerate(df_librettos.coperta.tolist()):
                         tempDirector.append(person)
                         print(len(meastroList))
 
+        # search for hit word maestro in copertas
         if word == 'maestro':
             cop_str = ' '.join(cop[indx:indx + 7])
 
@@ -109,7 +91,7 @@ for idx, cop in  enumerate(df_librettos.coperta.tolist()):
                 tempDirector.append(person)
                 print(person)
 
-
+        # search for hit word composta  in copertas
         for comp in ['compositore', 'composta']:
             if comp in word:
                 cop_str = ' '.join(cop[indx-5:indx + 5])
@@ -122,7 +104,7 @@ for idx, cop in  enumerate(df_librettos.coperta.tolist()):
     title = titles[idx]
 
     for indx, word in enumerate(title.split()):
-
+        # search for hit word musica in combination with präposition di/del in titles
         if 'musica' in word:
 
             for i in range(len(title.split()[indx:]) ):
@@ -134,7 +116,7 @@ for idx, cop in  enumerate(df_librettos.coperta.tolist()):
                         tempDirector.append(person)
                         print(person)
 
-
+        # search for hit word maestro in titles
         if 'maestro' in word:
             cop_str = ' '.join(title.split()[indx:indx + 5])
 
@@ -159,5 +141,5 @@ print(len(meastroList))
 
 df_librettos['composers'] = meastroList
 
-
+#save data frame
 df_librettos.to_csv(inPath+'librettos_with_composers.csv', index=False, header=True)
