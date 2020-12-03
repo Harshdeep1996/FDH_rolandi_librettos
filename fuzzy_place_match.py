@@ -245,5 +245,9 @@ df_librettos['city_name'] = city_name
 df_librettos['latitude'] = latitude
 df_librettos['longitude'] = longitude
 
+
+
+
+
 df_librettos.to_pickle(inPath+'librettos_ver_best.pkl')
 df_librettos.to_csv(inPath+'librettos_ver_best.csv', index=False, sep='\t', header=True)
