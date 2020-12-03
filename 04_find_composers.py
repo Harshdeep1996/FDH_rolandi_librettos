@@ -57,7 +57,7 @@ def extract_currency_relations(doc):
 
 
 inPath = '/home/nulpe/Desktop/foundations_dh/data/'
-df_librettos = pd.read_pickle(inPath+'librettos_ver_best.pkl')
+df_librettos = pd.read_pickle(inPath+'librettos_2.pkl')
 
 
 n=0
@@ -142,4 +142,4 @@ print(len(meastroList))
 df_librettos['composers'] = meastroList
 
 #save data frame
-df_librettos.to_csv(inPath+'librettos_with_composers.csv', index=False, header=True)
+df_librettos.to_csv(inPath+'librettos_3.csv', index=False, header=True)

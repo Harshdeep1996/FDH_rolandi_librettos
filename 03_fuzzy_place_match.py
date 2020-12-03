@@ -158,10 +158,6 @@ Pot_city_name_fuzzy = city_names
 
 
 city_no = 0
-print('lets go')
-
-
-
 
 for ind, cop in enumerate(df_librettos.coperta.tolist()):
     #print(cop)
@@ -249,5 +245,5 @@ df_librettos['longitude'] = longitude
 
 
 
-df_librettos.to_pickle(inPath+'librettos_ver_best.pkl')
-df_librettos.to_csv(inPath+'librettos_ver_best.csv', index=False, sep='\t', header=True)
+df_librettos.to_pickle(inPath+'librettos_2.pkl')
+df_librettos.to_csv(inPath+'librettos_2.csv', index=False, sep='\t', header=True)
