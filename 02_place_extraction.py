@@ -121,7 +121,7 @@ def cityDic():
 #change path according to need
 inPath = '/home/nulpe/Desktop/foundations_dh/fdh_manifests/'
 outPath = '/home/nulpe/Desktop/foundations_dh/data/'
-columns =['file_name', 'title', 'date', 'coperta', 'pot_city_name', 'coperta_appended', 'city_name', 'latitude', 'longitude']
+columns =['file_name', 'title', 'date', 'coperta', 'pot_city_name', 'city_name', 'latitude', 'longitude']
 df_librettos = pd.DataFrame(columns= columns)
 
 
@@ -202,7 +202,7 @@ for idx, filename in enumerate(os.listdir(inPath)):
 
             tempList.append(front_page)
             tempList.append(pot_city_name)
-            tempList.append(coperta_appended)
+            
 
             #Get location of first mentioned city
             if len(pot_city_name) != 0:

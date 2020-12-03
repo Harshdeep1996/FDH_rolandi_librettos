@@ -142,4 +142,4 @@ print(len(meastroList))
 df_librettos['inferred_composer'] = meastroList
 
 #save data frame
-df_librettos.to_csv(inPath+'librettos_3.csv', index=False, header=True)
+df_librettos.to_csv(inPath+'librettos_3.csv', sep='\t', index=False, header=True)
