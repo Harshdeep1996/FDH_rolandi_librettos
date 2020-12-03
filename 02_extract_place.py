@@ -118,9 +118,9 @@ def cityDic():
 
 
 
-
+#change path according to need
 inPath = '/home/nulpe/Desktop/foundations_dh/fdh_manifests/'
-outPath = '/home/nulpe/Desktop/foundations_dh/'
+outPath = '/home/nulpe/Desktop/foundations_dh/data/'
 columns =['file_name', 'title', 'date', 'coperta', 'pot_city_name', 'coperta_appended', 'city_name', 'latitude', 'longitude']
 df_librettos = pd.DataFrame(columns= columns)
 
@@ -225,8 +225,8 @@ for idx, filename in enumerate(os.listdir(inPath)):
             if (idx+1)  % 10 == 0:
                 print(df_librettos)
                 df_librettos.columns = columnas
-                df_librettos.to_pickle(outPath+'librettos.pkl')
-                df_librettos.to_csv(outPath+'librettos.csv', index=False, sep='\t', header=True)
+                df_librettos.to_pickle(outPath+'librettos_1.pkl')
+                df_librettos.to_csv(outPath+'librettos_1.csv', index=False, sep='\t', header=True)
 
 
 

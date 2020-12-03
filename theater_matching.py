@@ -28,4 +28,7 @@ kmeans = KMeans(n_clusters=150, random_state=0, max_iter=500, verbose=10000).fit
 locations['predicted_cluster'] = locations['location_vec'].progress_apply(
 	lambda x: kmeans.predict([x.tolist()])[0])
 
+
+
+
 locations.to_csv('data/librettos_2.csv')
